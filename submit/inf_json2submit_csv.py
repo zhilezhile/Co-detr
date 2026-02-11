@@ -29,12 +29,14 @@ def add_merged_mask_to_csv(
     基于动态阈值，将多个分数较高的mask融合进csv的Region字段
 
     Args:
+        ex_path: 当前比赛提交文件csv格式
         csv_path: CSV路径
         json_path: 推理结果json路径
         test_json_path: COCO测试集json路径
         output_csv: 输出CSV路径，None时自动生成
     """
-    df = pd.read_csv(csv_path)
+    ex_df = pd.read_csv(csv_path)
+    #df = pd.read_csv(csv_path)
 
     with open(json_path, 'r') as f:
         results = json.load(f)
@@ -68,35 +70,40 @@ def add_merged_mask_to_csv(
         size = image_id_to_size.get(img_id, (None, None))
         max_score = max(d['score'] for d in segs)
         # 针对 512x512 和 非512x512 使用不同阈值
-        if size == (512, 512):
-            thr = min(max_score * 0.5, 0.2)  # 512x512 图像
-        else:
-            # thr = min(max_score * 0.5, 0.1)  # 非512x512 图像
-            thr = 1.0
+        # if size == (512, 512):
+        #     thr = min(max_score * 0.5, 0.2)  # 512x512 图像
+        # else:
+        #     # thr = min(max_score * 0.5, 0.1)  # 非512x512 图像
+        #     thr = 1.0
+        thr = min(max_score * 0.8, 0.3)
         for d in segs:
             if d['score'] >= thr:
                 seg_dict[img_id].append(d['seg'])
     # ========================================
     # 更新Region字段，合并MASK
-    for idx, row in df.iterrows():
+    for idx, row in ex_df.iterrows():
         # if row['Label'] != 1:
         #     continue
-        file_name = os.path.basename(row['Path'])
+        file_name = os.path.basename(row['image_name'])
         img_id = file_to_image_id.get(file_name, None)
         if img_id is not None:
             segs = seg_dict.get(img_id, [])
             if segs:
                 merged_rle = merge_rle_masks(segs)
-                df.at[idx, 'Region'] = merged_rle
+                ex_df.at[idx, 'location'] = merged_rle
             else:
-                df.at[idx, 'Region'] = ''
+                ex_df.at[idx, 'location'] = ''
         else:
-            df.at[idx, 'Region'] = ''
+            ex_df.at[idx, 'location'] = ''
 
-    df.to_csv(output_csv, index=False)
+    # 由于只需要对Region的结果进行提取，所以这里直接将这列的结果赋值给当前比赛的提交文件的样例
+    #ex_df['location'] = df['Region']
+    ex_df.to_csv(output_csv, index=False)
+
     print(f"Merged mask with dynamic size-based threshold, updated {output_csv}")
 if __name__ == "__main__":
-    csv_path = '../annotations/test_all.csv'
+    #ex_path = '../annotations/submit1.csv'
+    csv_path = '../annotations/submit1.csv'
     json_path = 'xxxx.json'  # 这里填分割模型推理结果json
     test_json_path = '../annotations/test_all.json'  # 测试集coco json
     output_csv = f'csv_with_region_maxscore_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
