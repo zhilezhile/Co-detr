@@ -96,9 +96,9 @@ def add_merged_mask_to_csv(
     df.to_csv(output_csv, index=False)
     print(f"Merged mask with dynamic size-based threshold, updated {output_csv}")
 if __name__ == "__main__":
-    csv_path = './testB_data/testb.csv'
-    json_path = './Co-DETR-main/co_dino_swinl_mask_800_800_16e.segm.json'  # 推理结果json
-    test_json_path = './testB_data/testB_all.json'  # 测试集coco json
+    csv_path = '../annotations/test_all.csv'
+    json_path = 'xxxx.json'  # 这里填分割模型推理结果json
+    test_json_path = '../annotations/test_all.json'  # 测试集coco json
     output_csv = f'csv_with_region_maxscore_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
     # 这里得到最终mask文件
     add_merged_mask_to_csv(
